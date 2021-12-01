@@ -164,10 +164,10 @@ var Euler = (function () {
                         for (i = 0; i < this.cells_chains.length; i++) {
                             this.cells_chains[i].Move();
                         }
-                        return [4, this.sleep(2000)];
+                        return [4, this.sleep(100)];
                     case 2:
                         _a.sent();
-                        if (turn % 5 == 0) {
+                        if (turn % 100 == 0) {
                             console.log("turn:", turn);
                             this.print_cells_map();
                         }

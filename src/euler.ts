@@ -184,11 +184,24 @@ export class Euler {
                 this.cells_chains[i].Move();                
             }
             // console.log("===================");
-            await this.sleep(2000);
-            if(turn%5 == 0){
+            await this.sleep(100);
+            if(turn%100 == 0){
                 console.log("turn:",turn);
                 this.print_cells_map();
             }
+        }
+    }
+    async run() {
+        if(this.TRANSFER_TYPE == "mass"){
+            this.generate_mass_cells();
+        }
+        let turn:number = 0;
+        while(1){
+            turn++;
+            for(let i = 0;i < this.cells_chains.length;i++){
+                this.cells_chains[i].Move();                
+            }
+            await this.sleep(10);
         }
     }
 
