@@ -23,7 +23,6 @@ var Cell = (function () {
     };
     Cell.prototype.addNeighbors = function (newNeighbors) {
         this.neighbors.push(newNeighbors);
-        console.log("neib add!");
     };
     Cell.prototype.Move = function () {
         var ret = this.concent;
@@ -36,12 +35,10 @@ var Cell = (function () {
         return ret;
     };
     Cell.prototype.deliver_to_concent = function (neighbor, deliver) {
-        console.log("in cell");
     };
     Cell.prototype.Diffusion = function (neighbor) {
         var len = (this.width + neighbor.Cell.width) / 2.0;
         var deliver = neighbor.k * (this.concent - neighbor.Cell.concent) / len * 0.01;
-        console.log("deliver=", deliver);
         if (deliver > 0) {
             this.deliver_to_concent(neighbor, deliver);
         }

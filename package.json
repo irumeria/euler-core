@@ -4,13 +4,13 @@
   "description": "opensource online thermodynamic simulation app",
   "main": "./app.js",
   "scripts": {
-    "start":"node app.js",
-    "compile":"tsc"
+    "start": "node app.js",
+    "compile": "tsc"
   },
   "author": "iru",
   "type": "module",
   "license": "ISC",
   "dependencies": {
-    "mathjs": "^10.0.0"
+    "@types/node": "^16.11.11"
   }
 }

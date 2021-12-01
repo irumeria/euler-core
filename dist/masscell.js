@@ -20,10 +20,8 @@ var Masscell = (function (_super) {
         return _super !== null && _super.apply(this, arguments) || this;
     }
     Masscell.prototype.deliver_to_concent = function (neighbor, deliver) {
-        console.log("before:", this.concent);
         this.concent -= deliver;
         neighbor.Cell.concent += deliver;
-        console.log("after:", this.concent);
     };
     return Masscell;
 }(Cell));

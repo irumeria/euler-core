@@ -39,13 +39,13 @@ import { Cell } from "./cell.js";
 var Euler = (function () {
     function Euler() {
         this.MAX_CELL_NUM_X = 10;
-        this.MAX_CELL_NUM_Y = 1;
+        this.MAX_CELL_NUM_Y = 10;
         this.CELL_WIDTH = 1;
         this.CELL_HEIGHT = 1;
         this.TIME_UNIT = 1;
         this.K = 0.8;
         this.TRANSFER_TYPE = "mass";
-        this.BORDER_RULES = [[1, 1 / 9, 0], [1, 0, 1 / 2]];
+        this.BORDER_RULES = [[1, 1 / 10, 0], [1, 0, 1 / 10]];
         this.RAMDOM = true;
         this.cells_map = [];
         this.cells_chains = [];
@@ -136,7 +136,18 @@ var Euler = (function () {
             console.log("length of cells row-" + i + ":" + this.cells_chains.length);
         }
     };
-    Euler.prototype.run = function () {
+    Euler.prototype.print_cells_map = function () {
+        process.stdout.write("---\n");
+        for (var i = 0; i < this.cells_map.length; i++) {
+            process.stdout.write("|\t");
+            for (var j = 0; j < this.cells_map[0].length; j++) {
+                process.stdout.write(this.cells_map[i][j].concent.toFixed(1) + "\t");
+            }
+            process.stdout.write(" |\n");
+        }
+        process.stdout.write("---\n");
+    };
+    Euler.prototype.run_test = function () {
         return __awaiter(this, void 0, void 0, function () {
             var turn, i;
             return __generator(this, function (_a) {
@@ -150,15 +161,16 @@ var Euler = (function () {
                     case 1:
                         if (!1) return [3, 3];
                         turn++;
-                        console.log(turn);
                         for (i = 0; i < this.cells_chains.length; i++) {
-                            console.log("cell", i, this.cells_chains[i].concent);
                             this.cells_chains[i].Move();
                         }
-                        console.log("===================");
-                        return [4, this.sleep(5000)];
+                        return [4, this.sleep(2000)];
                     case 2:
                         _a.sent();
+                        if (turn % 5 == 0) {
+                            console.log("turn:", turn);
+                            this.print_cells_map();
+                        }
                         return [3, 1];
                     case 3: return [2];
                 }

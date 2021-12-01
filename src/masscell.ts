@@ -17,10 +17,10 @@ export class Masscell extends Cell {
     * @param deliver the deliver amount
     */
     deliver_to_concent(neighbor: Neighbors, deliver: number) {
-        console.log("before:",this.concent);
+        // console.log("before:",this.concent);
         this.concent -= deliver;
         neighbor.Cell.concent += deliver;
-        console.log("after:",this.concent);
+        // console.log("after:",this.concent);
         // console.log("in masscell")
     }
 }

@@ -7,7 +7,7 @@ export class Euler {
      * ===========================================================
      */
     MAX_CELL_NUM_X: number = 10;
-    MAX_CELL_NUM_Y: number = 1;
+    MAX_CELL_NUM_Y: number = 10;
     CELL_WIDTH: number = 1;
     CELL_HEIGHT: number = 1;
     TIME_UNIT: number = 1; // ms
@@ -19,7 +19,7 @@ export class Euler {
      * param1: x0 param2: y0
      * borders like: x/x0 + y/y0 < 1(max_border) or > 1(min_border)
      */
-    BORDER_RULES:number[][] = [[1, 1 / 9, 0], [1, 0, 1/2]];
+    BORDER_RULES:number[][] = [[1, 1 / 10, 0], [1, 0, 1/10]];
     /**
      * ===========================================================
      */
@@ -155,23 +155,40 @@ export class Euler {
     }
 
     /**
-     * run the model
+     * print cells concentration
+     * 
+     * only active in node env
      */
-    async run() {
+    print_cells_map(){
+        process.stdout.write("---\n");
+        for(let i = 0;i < this.cells_map.length;i++){
+            process.stdout.write("|\t");
+            for(let j = 0;j < this.cells_map[0].length;j++){
+                process.stdout.write(this.cells_map[i][j].concent.toFixed(1)+"\t");
+            }    
+            process.stdout.write(" |\n");                 
+        }  
+        process.stdout.write("---\n");
+    }
+    /**
+     * debug the model
+     */
+    async run_test() {
         if(this.TRANSFER_TYPE == "mass"){
             this.generate_mass_cells();
         }
         let turn:number = 0;
         while(1){
             turn++;
-            console.log(turn);
             for(let i = 0;i < this.cells_chains.length;i++){
-                console.log("cell",i,this.cells_chains[i].concent)
-                this.cells_chains[i].Move();
-                
+                this.cells_chains[i].Move();                
             }
-            console.log("===================");
-            await this.sleep(5000);
+            // console.log("===================");
+            await this.sleep(2000);
+            if(turn%5 == 0){
+                console.log("turn:",turn);
+                this.print_cells_map();
+            }
         }
     }
 

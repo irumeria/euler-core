@@ -36,7 +36,7 @@ export class Cell {
 
     addNeighbors( newNeighbors:Neighbors ){
         this.neighbors.push(newNeighbors);
-        console.log("neib add!");
+        // console.log("neib add!");
     }
     
     /**
@@ -65,7 +65,7 @@ export class Cell {
      */
     deliver_to_concent(neighbor:Neighbors,deliver:number){
         // should be implemented by the child class
-        console.log("in cell")
+        // console.log("in cell")
     }
 
     /**
@@ -77,7 +77,7 @@ export class Cell {
     Diffusion(neighbor:Neighbors){
         let len:number = (this.width+neighbor.Cell.width)/2.0;
         let deliver:number = neighbor.k*(this.concent - neighbor.Cell.concent)/len*0.01;
-        console.log("deliver=",deliver);
+        // console.log("deliver=",deliver);
         if(deliver > 0){
             this.deliver_to_concent(neighbor,deliver);
         }
