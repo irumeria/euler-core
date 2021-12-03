@@ -1,5 +1,16 @@
 import { Masscell } from "./masscell.js";
 import { Cell } from "./cell.js";
+interface border_options {
+    minmax: number,
+    x: number,
+    y: number,
+    type: number,
+    option: {
+        k: number,
+        a: number,
+    }
+
+}
 export class Euler {
 
     // set the global variables
@@ -15,11 +26,20 @@ export class Euler {
     TRANSFER_TYPE = "mass";
     /**
      * set linear borders 
+     * 
      * param0: 1 --  max_border, 0 --- min_border
+     * 
      * param1: x0 param2: y0
+     * 
+     * param2: border_type: 
+     * 1: Adiabatic 2:Thermostatic 3:Diffusion( defult:k=0.8 ) 4:Convective( default:a=0.8 )
+     * 
+     * param3: optional parameters for border_type
+     * 
      * borders like: x/x0 + y/y0 < 1(max_border) or > 1(min_border)
      */
-    BORDER_RULES:number[][] = [[1, 1 / 10, 0], [1, 0, 1/10]];
+    // BORDER_RULES: number[][] = [[1, 1 / 10, 0], [1, 0, 1 / 10]];
+    BORDER_RULES: border_options[] = [{ "minmax": 1, "x": 1 / 10, "y": 0, "type": 1, "option": null }, { "minmax": 1, "x": 0, "y": 1 / 10, "type": 1, "option": null }];
     /**
      * ===========================================================
      */
@@ -31,7 +51,7 @@ export class Euler {
     cells_map: Cell[][] = []; //  the squral map of cells
     cells_chains: Cell[] = []; // the activated cells
 
-    sleep(ms:number){
+    sleep(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
 
@@ -44,14 +64,14 @@ export class Euler {
     if_in_borders(x: number, y: number): boolean {
         let ret: boolean;
         for (let i = 0; i < this.BORDER_RULES.length; i++) {
-            let z = this.BORDER_RULES[i][1] * x + this.BORDER_RULES[i][2] * y;
-            if (this.BORDER_RULES[i][0] == 0) {
+            let z = this.BORDER_RULES[i].x * x + this.BORDER_RULES[i].y * y;
+            if (this.BORDER_RULES[i].minmax == 0) {
                 if (z > 1) {
                     ret = true;
                 } else {
                     ret = false;
                 }
-            } else if (this.BORDER_RULES[i][0] == 1) {
+            } else if (this.BORDER_RULES[i].minmax == 1) {
                 if (z < 1) {
                     ret = true;
                 } else {
@@ -93,12 +113,12 @@ export class Euler {
                 // link the cell with its neighbors
                 let neighbors = [];
                 if (i - 1 > 0 && this.if_in_borders(i - 1, j + 1)) {
-                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i - 1][j],"type":"diffusion"  });
-                    this.cells_map[i - 1][j].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j],"type":"diffusion" });
+                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i - 1][j], "type": "diffusion" });
+                    this.cells_map[i - 1][j].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j], "type": "diffusion" });
                 }
                 if (j - 1 > 0 && this.if_in_borders(i - 1, j - 1)) {
-                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i][j - 1],"type":"diffusion"  });
-                    this.cells_map[i][j - 1].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j] ,"type":"diffusion" });
+                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i][j - 1], "type": "diffusion" });
+                    this.cells_map[i][j - 1].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j], "type": "diffusion" });
                 }
                 this.cells_map[i][j].setNeighbors(neighbors);
                 this.cells_chains.push(this.cells_map[i][j]);
@@ -111,7 +131,7 @@ export class Euler {
     /**
      * generate mass cells in borders
      */
-     generate_mass_cells(): void {
+    generate_mass_cells(): void {
         // pattern:
         // cells know where it is
         // cells know who their neighbors is
@@ -136,12 +156,12 @@ export class Euler {
                 // link the cell with its neighbors
                 let neighbors = [];
                 if (i - 1 >= 0 && this.if_in_borders(i - 1, j + 1)) {
-                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i - 1][j],"type":"diffusion"  });
-                    this.cells_map[i - 1][j].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j],"type":"diffusion" });
+                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i - 1][j], "type": "diffusion" });
+                    this.cells_map[i - 1][j].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j], "type": "diffusion" });
                 }
                 if (j - 1 >= 0 && this.if_in_borders(i - 1, j - 1)) {
-                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i][j - 1],"type":"diffusion"  });
-                    this.cells_map[i][j - 1].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j] ,"type":"diffusion" });
+                    neighbors.push({ "k": this.K, "Cell": this.cells_map[i][j - 1], "type": "diffusion" });
+                    this.cells_map[i][j - 1].addNeighbors({ "k": this.K, "Cell": this.cells_map[i][j], "type": "diffusion" });
                 }
                 this.cells_map[i][j].setNeighbors(neighbors);
                 this.cells_chains.push(this.cells_map[i][j]);
@@ -159,53 +179,50 @@ export class Euler {
      * 
      * only active in node env
      */
-    print_cells_map(){
+    print_cells_map(): void {
         process.stdout.write("---\n");
-        for(let i = 0;i < this.cells_map.length;i++){
+        for (let i = 0; i < this.cells_map.length; i++) {
             process.stdout.write("|\t");
-            for(let j = 0;j < this.cells_map[0].length;j++){
-                process.stdout.write(this.cells_map[i][j].concent.toFixed(1)+"\t");
-            }    
-            process.stdout.write(" |\n");                 
-        }  
+            for (let j = 0; j < this.cells_map[0].length; j++) {
+                process.stdout.write(this.cells_map[i][j].concent.toFixed(1) + "\t");
+            }
+            process.stdout.write(" |\n");
+        }
         process.stdout.write("---\n");
     }
     /**
      * debug the model
      */
     async run_test() {
-        if(this.TRANSFER_TYPE == "mass"){
+        if (this.TRANSFER_TYPE == "mass") {
             this.generate_mass_cells();
         }
-        let turn:number = 0;
-        while(1){
+        let turn: number = 0;
+        while (1) {
             turn++;
-            for(let i = 0;i < this.cells_chains.length;i++){
-                this.cells_chains[i].Move();                
+            for (let i = 0; i < this.cells_chains.length; i++) {
+                this.cells_chains[i].Move();
             }
             // console.log("===================");
             await this.sleep(100);
-            if(turn%100 == 0){
-                console.log("turn:",turn);
+            if (turn % 100 == 0) {
+                console.log("turn:", turn);
                 this.print_cells_map();
             }
         }
     }
     async run() {
-        if(this.TRANSFER_TYPE == "mass"){
+        if (this.TRANSFER_TYPE == "mass") {
             this.generate_mass_cells();
         }
-        let turn:number = 0;
-        while(1){
+        let turn: number = 0;
+        while (1) {
             turn++;
-            for(let i = 0;i < this.cells_chains.length;i++){
-                this.cells_chains[i].Move();                
+            for (let i = 0; i < this.cells_chains.length; i++) {
+                this.cells_chains[i].Move();
             }
             await this.sleep(10);
         }
     }
 
-
-
-    // console.log(new Polygon(4, 3).area);
 }

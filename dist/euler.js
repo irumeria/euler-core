@@ -45,7 +45,7 @@ var Euler = (function () {
         this.TIME_UNIT = 1;
         this.K = 0.8;
         this.TRANSFER_TYPE = "mass";
-        this.BORDER_RULES = [[1, 1 / 10, 0], [1, 0, 1 / 10]];
+        this.BORDER_RULES = [{ "minmax": 1, "x": 1 / 10, "y": 0, "type": 1, "option": null }, { "minmax": 1, "x": 0, "y": 1 / 10, "type": 1, "option": null }];
         this.RAMDOM = true;
         this.cells_map = [];
         this.cells_chains = [];
@@ -56,8 +56,8 @@ var Euler = (function () {
     Euler.prototype.if_in_borders = function (x, y) {
         var ret;
         for (var i = 0; i < this.BORDER_RULES.length; i++) {
-            var z = this.BORDER_RULES[i][1] * x + this.BORDER_RULES[i][2] * y;
-            if (this.BORDER_RULES[i][0] == 0) {
+            var z = this.BORDER_RULES[i].x * x + this.BORDER_RULES[i].y * y;
+            if (this.BORDER_RULES[i].minmax == 0) {
                 if (z > 1) {
                     ret = true;
                 }
@@ -65,7 +65,7 @@ var Euler = (function () {
                     ret = false;
                 }
             }
-            else if (this.BORDER_RULES[i][0] == 1) {
+            else if (this.BORDER_RULES[i].minmax == 1) {
                 if (z < 1) {
                     ret = true;
                 }
@@ -171,6 +171,32 @@ var Euler = (function () {
                             console.log("turn:", turn);
                             this.print_cells_map();
                         }
+                        return [3, 1];
+                    case 3: return [2];
+                }
+            });
+        });
+    };
+    Euler.prototype.run = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var turn, i;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (this.TRANSFER_TYPE == "mass") {
+                            this.generate_mass_cells();
+                        }
+                        turn = 0;
+                        _a.label = 1;
+                    case 1:
+                        if (!1) return [3, 3];
+                        turn++;
+                        for (i = 0; i < this.cells_chains.length; i++) {
+                            this.cells_chains[i].Move();
+                        }
+                        return [4, this.sleep(10)];
+                    case 2:
+                        _a.sent();
                         return [3, 1];
                     case 3: return [2];
                 }
