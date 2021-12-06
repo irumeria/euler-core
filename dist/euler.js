@@ -38,14 +38,14 @@ import { Masscell } from "./masscell.js";
 import { Cell } from "./cell.js";
 var Euler = (function () {
     function Euler() {
-        this.MAX_CELL_NUM_X = 10;
-        this.MAX_CELL_NUM_Y = 10;
+        this.MAX_CELL_NUM_X = 12;
+        this.MAX_CELL_NUM_Y = 12;
         this.CELL_WIDTH = 1;
         this.CELL_HEIGHT = 1;
         this.TIME_UNIT = 1;
         this.K = 0.8;
         this.TRANSFER_TYPE = "mass";
-        this.BORDER_RULES = [{ "minmax": 1, "x": 1 / 10, "y": 0, "type": 1, "option": null }, { "minmax": 1, "x": 0, "y": 1 / 10, "type": 1, "option": null }];
+        this.BORDER_RULES = [{ "minmax": 1, "x": 1 / 10, "y": 0, "type": 3, "option": { "k": 0.04, "concent_env": 100, a: undefined, concent: undefined } }, { "minmax": 1, "x": 0, "y": 1 / 10, "type": 3, "option": { "k": 0.04, "concent_env": 100, a: undefined, concent: undefined } }];
         this.RAMDOM = true;
         this.cells_map = [];
         this.cells_chains = [];
@@ -53,12 +53,16 @@ var Euler = (function () {
     Euler.prototype.sleep = function (ms) {
         return new Promise(function (resolve) { return setTimeout(resolve, ms); });
     };
+    Euler.prototype.lossyEqual = function (a, b, epsilon) {
+        if (epsilon === void 0) { epsilon = 1E-05; }
+        return Math.abs(a - b) < epsilon;
+    };
     Euler.prototype.if_in_borders = function (x, y) {
         var ret;
         for (var i = 0; i < this.BORDER_RULES.length; i++) {
             var z = this.BORDER_RULES[i].x * x + this.BORDER_RULES[i].y * y;
             if (this.BORDER_RULES[i].minmax == 0) {
-                if (z > 1) {
+                if (z >= 1) {
                     ret = true;
                 }
                 else {
@@ -66,7 +70,7 @@ var Euler = (function () {
                 }
             }
             else if (this.BORDER_RULES[i].minmax == 1) {
-                if (z < 1) {
+                if (z <= 1) {
                     ret = true;
                 }
                 else {
@@ -119,6 +123,7 @@ var Euler = (function () {
                 else {
                 }
                 if (!this.if_in_borders(i, j)) {
+                    this.cells_map[i][this.cells_map[i].length - 1].setConcent(-1);
                     continue;
                 }
                 var neighbors = [];
@@ -136,6 +141,29 @@ var Euler = (function () {
             console.log("length of cells row-" + i + ":" + this.cells_chains.length);
         }
     };
+    Euler.prototype.border_move_all = function () {
+        for (var i = 0; i < this.BORDER_RULES.length; i++) {
+            if (this.BORDER_RULES[i].type == 1) {
+                continue;
+            }
+            else if (this.BORDER_RULES[i].type == 2) {
+                for (var j = 0; j < this.cells_chains.length; j++) {
+                    if (this.lossyEqual(this.BORDER_RULES[i].x * this.cells_chains[j].x + this.BORDER_RULES[i].y * this.cells_chains[j].y, 1)) {
+                        this.cells_chains[j].concent = this.BORDER_RULES[i].option.concent;
+                    }
+                }
+            }
+            else if (this.BORDER_RULES[i].type == 3) {
+                for (var j = 0; j < this.cells_chains.length; j++) {
+                    if (this.lossyEqual(this.BORDER_RULES[i].x * this.cells_chains[j].x + this.BORDER_RULES[i].y * this.cells_chains[j].y, 1)) {
+                        var tempCell = new Cell(-1, -1, this.BORDER_RULES[i].option.concent_env);
+                        var deliver = this.BORDER_RULES[i].option.k * (this.cells_chains[j].concent - tempCell.concent);
+                        this.cells_chains[j].deliver_to_concent({ "k": -1, "Cell": tempCell, "type": "diffusion" }, deliver);
+                    }
+                }
+            }
+        }
+    };
     Euler.prototype.print_cells_map = function () {
         process.stdout.write("---\n");
         for (var i = 0; i < this.cells_map.length; i++) {
@@ -149,31 +177,26 @@ var Euler = (function () {
     };
     Euler.prototype.run_test = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var turn, i;
+            var turn, i, i;
             return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        if (this.TRANSFER_TYPE == "mass") {
-                            this.generate_mass_cells();
-                        }
-                        turn = 0;
-                        _a.label = 1;
-                    case 1:
-                        if (!1) return [3, 3];
-                        turn++;
-                        for (i = 0; i < this.cells_chains.length; i++) {
-                            this.cells_chains[i].Move();
-                        }
-                        return [4, this.sleep(100)];
-                    case 2:
-                        _a.sent();
-                        if (turn % 100 == 0) {
-                            console.log("turn:", turn);
-                            this.print_cells_map();
-                        }
-                        return [3, 1];
-                    case 3: return [2];
+                if (this.TRANSFER_TYPE == "mass") {
+                    this.generate_mass_cells();
                 }
+                turn = 0;
+                while (1) {
+                    turn++;
+                    for (i = 0; i < this.cells_chains.length; i++) {
+                        this.cells_chains[i].Move();
+                    }
+                    for (i = 0; i < this.BORDER_RULES.length; i++) {
+                        this.border_move_all();
+                    }
+                    if (turn % 200 == 0) {
+                        console.log("turn:", turn);
+                        this.print_cells_map();
+                    }
+                }
+                return [2];
             });
         });
     };

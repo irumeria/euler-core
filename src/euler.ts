@@ -1,13 +1,30 @@
 import { Masscell } from "./masscell.js";
 import { Cell } from "./cell.js";
+
+/**
+ * borders options
+ * 
+ * minmax: 1 --  max_border, 0 --- min_border
+ * 
+ * x,y: indicate the position of the cell (x0,y0)
+ * 
+ * type: type of the border
+ * 1: Adiabatic 2:Thermostatic 3:Diffusion( defult:k=0.8 ) 4:Convective( default:a=0.8 )
+ * 
+ * option: optional parameters for border_type
+ * 
+ * borders like: x/x0 + y/y0 < 1(max_border) or > 1(min_border)
+ */
 interface border_options {
     minmax: number,
     x: number,
     y: number,
     type: number,
     option: {
-        k: number,
-        a: number,
+        k: number, // type 3
+        a: number, // type 4
+        concent: number, // type 2
+        concent_env: number // type 3
     }
 
 }
@@ -17,29 +34,15 @@ export class Euler {
     /**
      * ===========================================================
      */
-    MAX_CELL_NUM_X: number = 10;
-    MAX_CELL_NUM_Y: number = 10;
+    MAX_CELL_NUM_X: number = 12;
+    MAX_CELL_NUM_Y: number = 12;
     CELL_WIDTH: number = 1;
     CELL_HEIGHT: number = 1;
     TIME_UNIT: number = 1; // ms
     K: number = 0.8; // conductivity ( W/mC )
     TRANSFER_TYPE = "mass";
-    /**
-     * set linear borders 
-     * 
-     * param0: 1 --  max_border, 0 --- min_border
-     * 
-     * param1: x0 param2: y0
-     * 
-     * param2: border_type: 
-     * 1: Adiabatic 2:Thermostatic 3:Diffusion( defult:k=0.8 ) 4:Convective( default:a=0.8 )
-     * 
-     * param3: optional parameters for border_type
-     * 
-     * borders like: x/x0 + y/y0 < 1(max_border) or > 1(min_border)
-     */
-    // BORDER_RULES: number[][] = [[1, 1 / 10, 0], [1, 0, 1 / 10]];
-    BORDER_RULES: border_options[] = [{ "minmax": 1, "x": 1 / 10, "y": 0, "type": 1, "option": null }, { "minmax": 1, "x": 0, "y": 1 / 10, "type": 1, "option": null }];
+
+    BORDER_RULES: border_options[] = [{ "minmax": 1, "x": 1 / 10, "y": 0, "type": 3, "option": { "k": 0.04, "concent_env": 100, a: undefined, concent: undefined } }, { "minmax": 1, "x": 0, "y": 1 / 10, "type": 3, "option": { "k": 0.04, "concent_env": 100, a: undefined, concent: undefined } }];
     /**
      * ===========================================================
      */
@@ -54,7 +57,9 @@ export class Euler {
     sleep(ms: number) {
         return new Promise(resolve => setTimeout(resolve, ms));
     }
-
+    lossyEqual(a, b, epsilon = 1E-05) {
+        return Math.abs(a - b) < epsilon;
+    }
     /**
      * 
      * @param x posotion x of the cell
@@ -66,13 +71,13 @@ export class Euler {
         for (let i = 0; i < this.BORDER_RULES.length; i++) {
             let z = this.BORDER_RULES[i].x * x + this.BORDER_RULES[i].y * y;
             if (this.BORDER_RULES[i].minmax == 0) {
-                if (z > 1) {
+                if (z >= 1) {
                     ret = true;
                 } else {
                     ret = false;
                 }
             } else if (this.BORDER_RULES[i].minmax == 1) {
-                if (z < 1) {
+                if (z <= 1) {
                     ret = true;
                 } else {
                     ret = false;
@@ -149,6 +154,7 @@ export class Euler {
 
                 //test if the posotion is in the borders
                 if (!this.if_in_borders(i, j)) {
+                    this.cells_map[i][this.cells_map[i].length - 1].setConcent(-1);
                     // console.log("("+i,j+") is not in border");
                     continue;
                 }
@@ -168,6 +174,33 @@ export class Euler {
 
             }
             console.log("length of cells row-" + i + ":" + this.cells_chains.length);
+        }
+    }
+    /**
+     * execute the border rule
+     */
+    border_move_all() {
+        for (let i = 0; i < this.BORDER_RULES.length; i++) {
+            if (this.BORDER_RULES[i].type == 1) { // Adiabatic
+                continue;
+            } else if (this.BORDER_RULES[i].type == 2) { // Thermostatic
+                for (let j = 0; j < this.cells_chains.length; j++) {
+                    if (this.lossyEqual(this.BORDER_RULES[i].x * this.cells_chains[j].x + this.BORDER_RULES[i].y * this.cells_chains[j].y, 1)) {
+                        this.cells_chains[j].concent = this.BORDER_RULES[i].option.concent;
+                    }
+                }
+            } else if (this.BORDER_RULES[i].type == 3) { // Diffusion
+                for (let j = 0; j < this.cells_chains.length; j++) {
+                    if (this.lossyEqual(this.BORDER_RULES[i].x * this.cells_chains[j].x + this.BORDER_RULES[i].y * this.cells_chains[j].y, 1)) {
+                        let tempCell: Cell = new Cell(-1, -1, this.BORDER_RULES[i].option.concent_env);
+                        let deliver: number = this.BORDER_RULES[i].option.k * (this.cells_chains[j].concent - tempCell.concent);
+                        // console.log(this.cells_chains[j].concent);
+                        this.cells_chains[j].deliver_to_concent({ "k": -1, "Cell": tempCell, "type": "diffusion" }, deliver);
+                        // console.log(this.cells_chains[j].concent);
+                        // console.log("============")
+                    }
+                }
+            }
         }
     }
 
@@ -203,9 +236,12 @@ export class Euler {
             for (let i = 0; i < this.cells_chains.length; i++) {
                 this.cells_chains[i].Move();
             }
+            for(let i = 0; i < this.BORDER_RULES.length;i++){
+                this.border_move_all();
+            }
             // console.log("===================");
-            await this.sleep(100);
-            if (turn % 100 == 0) {
+            await this.sleep(10);
+            if (turn % 200 == 0) {
                 console.log("turn:", turn);
                 this.print_cells_map();
             }
